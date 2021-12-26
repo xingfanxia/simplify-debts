@@ -24,15 +24,15 @@ from functools import reduce
 
 def printEdges(edges, graphviz):
     if graphviz:
-        print "Digraph G {"
+        print("Digraph G {")
     for edge in edges:
         edge.normalize()
         if graphviz:
-            print edge.toGraphvizString()
+            print(edge.toGraphvizString())
         else:
-            print edge.toString()
+            print(edge.toString())
     if graphviz:
-        print "}"
+        print("}")
 
 def addWeight(weights, nodeName, weightDelta):
     try:
@@ -57,7 +57,7 @@ def findGreaterWeight(weightComp, weights):
     for node, weight in weights.iteritems():
         if weight >= weightComp:
             return node
-    raise NodeError, 'Edge not found'
+    raise NodeError('Edge not found')
 
 class NodeError(Exception):
     def __init__(self, value):
@@ -80,7 +80,7 @@ def weightsToEdges(sortedWeights, weights):
         currentWeight = weights[currentNode]
         if currentWeight == 0:
             i += 1
-            continue;
+            continue
 
         transact = abs(currentWeight)
         if currentWeight < 0:
@@ -113,7 +113,7 @@ def splitStarNodes(edges, emptyNodes, verbose):
             nodes.append(edge.endNode)
     uniqueNodes = uniqueList(nodes)
     if verbose:
-        print "Found these", len(uniqueNodes), "unique nodes:", uniqueNodes
+        print("Found these", len(uniqueNodes), "unique nodes:", uniqueNodes)
 
     i = 0
     while i < len(edges):
@@ -121,13 +121,13 @@ def splitStarNodes(edges, emptyNodes, verbose):
             for node in uniqueNodes:
                 if node != edges[i].endNode:
                     edges.append(Edge(node, edges[i].endNode,
-                                      edges[i].weight/len(uniqueNodes)))
+                                edges[i].weight/len(uniqueNodes)))
             edges.pop(i)
         elif edges[i].endNode == "*": # Foo -> *: 10
             for node in uniqueNodes:
                 if node != edges[i].startNode:
                     edges.append(Edge(edges[i].startNode, node,
-                                      edges[i].weight/len(uniqueNodes)))
+                                edges[i].weight/len(uniqueNodes)))
             edges.pop(i)
         else:
             i += 1
@@ -138,7 +138,7 @@ def uniqueList(list):
     map(set.__setitem__, list, [])
     return set.keys()
 
-searchComment = re.compile("^(#| *$)");
+searchComment = re.compile("^(#| *$)")
 searchEdge = re.compile("(\w+|\*) *-> *(\w+|\*): *([0-9]+(\.[0-9]+)?)")
 searchNode = re.compile("^(\w+)$")
 
@@ -150,7 +150,7 @@ def parseEdge(line):
         weight = float(m.group(3))
         if startNode != endNode:
             return Edge(startNode, endNode, weight)
-    raise EdgeException, "Invalid input line"
+    raise EdgeException("Invalid input line")
 
 class Edge:
     def __init__(self, startNode, endNode, weight):
@@ -205,7 +205,7 @@ for line in sys.stdin:
         elif searchComment.match(line):
             pass
         else:
-            print >> sys.stderr, "Invalid input on line", i, ": " + line.rstrip()
+            print(sys.stderr, "Invalid input on line", i, ": " + line.rstrip())
             exit(1)
     i += 1
 
@@ -219,10 +219,10 @@ removeZeroWeights(sortedWeights)
 if len(sortedWeights) > 0:
     assert round(reduce((lambda x, y: x + y), map(lambda x: x[0], sortedWeights)), 10) == 0.0
 if verbose:
-    print "Node weights: ", sortedWeights
+    print("Node weights: ", sortedWeights)
 
 edges = weightsToEdges(sortedWeights, weights)
 
 if len(edges) > 0 and verbose:
-    print "Total money transacted: ", reduce((lambda x, y: x + y), map(lambda x: x.weight, edges))
+    print("Total money transacted: ", reduce((lambda x, y: x + y), map(lambda x: x.weight, edges)))
 printEdges(edges, args. graphviz)
