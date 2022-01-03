@@ -1,7 +1,11 @@
 * -> pi: 189
 * -> xiaobai: 65
+ethan -> jen: 7.66
+pi -> jen: 7.66
+xiaobai -> jen: 7.66
+chenq -> jen: 7.66
+cindy -> jen: 7.66
 ethan
-jen
 chenq
 cindy
 julie
