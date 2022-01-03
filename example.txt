@@ -1,10 +1,8 @@
-* -> chenq: 290
-* -> jen: 147
-* -> amino: 89
-* -> xiaobai: 22
-* -> linyue: 82
-* -> pi: 50
-* -> tom: 28
+* -> pi: 189
+* -> xiaobai: 65
 ethan
-benjamin
-ben_gf
+jen
+chenq
+cindy
+julie
+taotao
