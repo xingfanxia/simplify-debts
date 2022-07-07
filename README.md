@@ -2,6 +2,7 @@
 
 Simplify debts by minimizing transactions. The algorithm does not aim in minimizing transaction amounts but only the number of transactions.
 
+This for some reason requires python2... need to update for it to work for python3
 ## Run
 
 1. Create debts file, e.g. example.txt:

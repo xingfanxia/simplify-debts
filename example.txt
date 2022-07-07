@@ -1,12 +1,4 @@
-* -> pi: 189
-* -> xiaobai: 65
-ethan -> jen: 7.66
-pi -> jen: 7.66
-xiaobai -> jen: 7.66
-chenq -> jen: 7.66
-cindy -> jen: 7.66
-ethan
-chenq
-cindy
-julie
-taotao
+* -> xx: 352
+* -> delia: 101
+yang
+yuhao
