@@ -1,4 +1,5 @@
-# simplify.py, (C) 2007-2018 Yrjo Kari-Koskinen <ykk@peruna.fi>
+'''
+simplify.py, (C) 2007-2018 Yrjo Kari-Koskinen <ykk@peruna.fi>
 #
 # This program is licensed under Version 2 of the GPL.
 
@@ -14,6 +15,7 @@
 #
 # Zot
 # = Zot has no direct debts but is to be included in "everybody"
+''' 
 
 
 import sys
@@ -53,7 +55,7 @@ def getNodeWeights(edges):
     return weights
 
 def findGreaterWeight(weightComp, weights):
-    for node, weight in weights.iteritems():
+    for node, weight in weights.items():
         if weight >= weightComp:
             return node
     raise NodeError('Edge not found')
@@ -132,10 +134,8 @@ def splitStarNodes(edges, emptyNodes, verbose):
             i += 1
     return edges
 
-def uniqueList(list):
-    set = {}
-    map(set.__setitem__, list, [])
-    return set.keys()
+def uniqueList(input_list):
+    return list(set(input_list))
 
 searchComment = re.compile("^(#| *$)")
 searchEdge = re.compile("(\w+|\*) *-> *(\w+|\*): *([0-9]+(\.[0-9]+)?)")
@@ -159,10 +159,10 @@ class Edge:
 
     def toGraphvizString(self):
         return self.startNode + " -> " + self.endNode + \
-            " [ label=\"" + str(self.weight) + "\" ];"
+            " [ label=\"" + str(round(self.weight, 2)) + "\" ];"
 
     def toString(self):
-        return self.startNode + " -> " + self.endNode + ": " + str(self.weight)
+        return self.startNode + " -> " + self.endNode + ": " + str(round(self.weight, 2))
 
     def otherNode(self, nodeName):
         if self.startNode == nodeName:
@@ -185,43 +185,43 @@ class Edge:
             self.startNode = self.endNode
             self.endNode = tempNode
 
-argparser = argparse.ArgumentParser()
-argparser.add_argument("-g", "--graphviz", action='store_true')
-argparser.add_argument("-v", "--verbose", action='store_true')
-argparser.add_argument("filename", action='store_true')
-args = argparser.parse_args()
-verbose = args.verbose and not args.graphviz
+if __name__ == "__main__":
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("-g", "--graphviz", action='store_true')
+    argparser.add_argument("-v", "--verbose", action='store_true')
+    argparser.add_argument("filename", action='store_true')
+    args = argparser.parse_args()
+    verbose = args.verbose and not args.graphviz
+    edges = []
+    emptyNodes = []
+    i = 1
+    for line in sys.stdin:
+        try:
+            edges.append(parseEdge(line))
+        except EdgeException:
+            if searchNode.match(line):
+                emptyNodes.append(line.rstrip())
+            elif searchComment.match(line):
+                pass
+            else:
+                print(sys.stderr, "Invalid input on line", i, ": " + line.rstrip())
+                exit(1)
+        i += 1
 
-edges = []
-emptyNodes = []
-i = 1
-for line in sys.stdin:
-    try:
-        edges.append(parseEdge(line))
-    except EdgeException:
-        if searchNode.match(line):
-            emptyNodes.append(line.rstrip())
-        elif searchComment.match(line):
-            pass
-        else:
-            print(sys.stderr, "Invalid input on line", i, ": " + line.rstrip())
-            exit(1)
-    i += 1
+    edges = splitStarNodes(edges, emptyNodes, verbose)
 
+    weights = getNodeWeights(edges)
+    
+    sortedWeights = sort(weights)
+    removeZeroWeights(sortedWeights)
 
-edges = splitStarNodes(edges, emptyNodes, verbose)
+    if len(sortedWeights) > 0:
+        assert round(reduce((lambda x, y: x + y), map(lambda x: x[0], sortedWeights)), 10) == 0.0
+    if verbose:
+        print("Node weights: ", sortedWeights)
 
-weights = getNodeWeights(edges)
-sortedWeights = sort(weights)
-removeZeroWeights(sortedWeights)
+    edges = weightsToEdges(sortedWeights, weights)
 
-if len(sortedWeights) > 0:
-    assert round(reduce((lambda x, y: x + y), map(lambda x: x[0], sortedWeights)), 10) == 0.0
-if verbose:
-    print("Node weights: ", sortedWeights)
-
-edges = weightsToEdges(sortedWeights, weights)
-
-if len(edges) > 0 and verbose:
-    print("Total money transacted: ", reduce((lambda x, y: x + y), map(lambda x: x.weight, edges)))
-printEdges(edges, args. graphviz)
+    if len(edges) > 0 and verbose:
+        print("Total money transacted: ", reduce((lambda x, y: x + y), map(lambda x: x.weight, edges)))
+    printEdges(edges, args. graphviz)

@@ -2,7 +2,7 @@
 
 Simplify debts by minimizing transactions. The algorithm does not aim in minimizing transaction amounts but only the number of transactions.
 
-This for some reason requires python2... need to update for it to work for python3
+Updated for python3
 ## Run
 
 1. Create debts file, e.g. example.txt:
@@ -17,7 +17,7 @@ Ellen
 
 2. Run:
 ```
-$ src/simplify.py <example.txt
+$ python3 src/simplify.py <example.txt
 Bob -> Joe: 16.4
 Sue -> Joe: 16.4
 Ellen -> Joe: 4.2
@@ -26,7 +26,7 @@ Ellen -> Joe: 4.2
 ## Run with [graphviz](http://www.graphviz.org/)
 
 ```
-$ src/simplify.py -g <example.txt |dot -Tpng >example.png
+$ python3 src/simplify.py -g <example.txt |dot -Tpng >example.png
 ```
 
 ![example graph](example.png)
