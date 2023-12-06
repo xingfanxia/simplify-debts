@@ -1,227 +1,146 @@
-'''
-simplify.py, (C) 2007-2018 Yrjo Kari-Koskinen <ykk@peruna.fi>
-#
-# This program is licensed under Version 2 of the GPL.
-
-# Simplify debts by minimizing transactions.
-#
-# Use following input from stdin:
-#
-# * -> Foo: 15.50
-# = everybody ows Foo 15.50 units
-#
-# Foo -> Bar: 10.00
-# = Foo ows Bar 10.00 units
-#
-# Zot
-# = Zot has no direct debts but is to be included in "everybody"
-''' 
-
-
 import sys
 import re
 import argparse
-from functools import reduce
-
-def printEdges(edges, graphviz):
-    if graphviz:
-        print("Digraph G {")
-    for edge in edges:
-        edge.normalize()
-        if graphviz:
-            print(edge.toGraphvizString())
-        else:
-            print(edge.toString())
-    if graphviz:
-        print("}")
-
-def addWeight(weights, nodeName, weightDelta):
-    try:
-        oldWeight = weights[nodeName]
-    except KeyError:
-        oldWeight = 0
-    weights[nodeName] = oldWeight + weightDelta
-
-def sort(weights):
-    weightItems = [(value, key) for key, value in weights.items()]
-    weightItems.sort()
-    return weightItems
-
-def getNodeWeights(edges):
-    weights = {}
-    for edge in edges:
-        addWeight(weights, edge.endNode, edge.weight)
-        addWeight(weights, edge.startNode, -1 * edge.weight)
-    return weights
-
-def findGreaterWeight(weightComp, weights):
-    for node, weight in weights.items():
-        if weight >= weightComp:
-            return node
-    raise NodeError('Edge not found')
+from typing import List, Dict, Tuple
 
 class NodeError(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
+    pass
 
 class EdgeException(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
-
-def weightsToEdges(sortedWeights, weights):
-    i = 0
-    edges = []
-    target = ""
-    while i+1 < len(sortedWeights):
-        currentNode = sortedWeights[i][1]
-        currentWeight = weights[currentNode]
-        if currentWeight == 0:
-            i += 1
-            continue
-
-        transact = abs(currentWeight)
-        if currentWeight < 0:
-            try:
-                target = findGreaterWeight(transact, weights)
-            except NodeError:
-                target = sortedWeights[i+1][1]
-        else:
-            target = sortedWeights[i+1][1]
-        edges.append(Edge(currentNode, target, transact))
-        weights[target] += currentWeight
-        i += 1
-    return edges
-
-def removeZeroWeights(w):
-    i = 0
-    while i < len(w):
-        if w[i][0] == 0:
-            w.pop(i)
-        else:
-            i += 1
-
-
-def splitStarNodes(edges, emptyNodes, verbose):
-    nodes = emptyNodes
-    for edge in edges:
-        if edge.startNode != "*":
-            nodes.append(edge.startNode)
-        if edge.endNode != "*":
-            nodes.append(edge.endNode)
-    uniqueNodes = uniqueList(nodes)
-    if verbose:
-        print("Found these", len(uniqueNodes), "unique nodes:", uniqueNodes)
-
-    i = 0
-    while i < len(edges):
-        if edges[i].startNode == "*": # * -> Foo: 10
-            for node in uniqueNodes:
-                if node != edges[i].endNode:
-                    edges.append(Edge(node, edges[i].endNode,
-                                edges[i].weight/len(uniqueNodes)))
-            edges.pop(i)
-        elif edges[i].endNode == "*": # Foo -> *: 10
-            for node in uniqueNodes:
-                if node != edges[i].startNode:
-                    edges.append(Edge(edges[i].startNode, node,
-                                edges[i].weight/len(uniqueNodes)))
-            edges.pop(i)
-        else:
-            i += 1
-    return edges
-
-def uniqueList(input_list):
-    return list(set(input_list))
-
-searchComment = re.compile("^(#| *$)")
-searchEdge = re.compile("(\w+|\*) *-> *(\w+|\*): *([0-9]+(\.[0-9]+)?)")
-searchNode = re.compile("^(\w+)$")
-
-def parseEdge(line):
-    m = searchEdge.match(line)
-    if m != None:
-        startNode = m.group(1)
-        endNode = m.group(2)
-        weight = float(m.group(3))
-        if startNode != endNode:
-            return Edge(startNode, endNode, weight)
-    raise EdgeException("Invalid input line")
+    pass
 
 class Edge:
-    def __init__(self, startNode, endNode, weight):
-        self.startNode = startNode
-        self.endNode = endNode
+    def __init__(self, start_node: str, end_node: str, weight: float):
+        self.start_node = start_node
+        self.end_node = end_node
         self.weight = weight
 
-    def toGraphvizString(self):
-        return self.startNode + " -> " + self.endNode + \
-            " [ label=\"" + str(round(self.weight, 2)) + "\" ];"
+    def to_graphviz_string(self) -> str:
+        return f'{self.start_node} -> {self.end_node} [ label="{round(self.weight, 2)}" ];'
 
-    def toString(self):
-        return self.startNode + " -> " + self.endNode + ": " + str(round(self.weight, 2))
-
-    def otherNode(self, nodeName):
-        if self.startNode == nodeName:
-            return self.endNode
-        else:
-            return self.startNode
-
-    def equalEdges(self, other):
-        if self.startNode == other.startNode and self.endNode == other.endNode:
-            return 1
-        elif self.startNode == other.endNode and self.endNode == other.startNode:
-            return -1
-        else:
-            return 0
+    def __str__(self) -> str:
+        return f'{self.start_node} -> {self.end_node}: {round(self.weight, 2)}'
 
     def normalize(self):
         if self.weight < 0:
             self.weight *= -1
-            tempNode = self.startNode
-            self.startNode = self.endNode
-            self.endNode = tempNode
+            self.start_node, self.end_node = self.end_node, self.start_node
+
+def print_edges(edges: List[Edge], graphviz: bool):
+    if graphviz:
+        print("digraph G {")
+    for edge in edges:
+        edge.normalize()
+        print(edge.to_graphviz_string() if graphviz else str(edge))
+    if graphviz:
+        print("}")
+
+def add_weight(weights: Dict[str, float], node_name: str, weight_delta: float):
+    weights[node_name] = weights.get(node_name, 0) + weight_delta
+
+def sort_weights(weights: Dict[str, float]) -> List[Tuple[float, str]]:
+    return sorted([(value, key) for key, value in weights.items()])
+
+def get_node_weights(edges: List[Edge]) -> Dict[str, float]:
+    weights = {}
+    for edge in edges:
+        add_weight(weights, edge.end_node, edge.weight)
+        add_weight(weights, edge.start_node, -edge.weight)
+    return weights
+
+def find_greater_weight(weight_comp: float, weights: Dict[str, float]) -> str:
+    for node, weight in weights.items():
+        if weight >= weight_comp:
+            return node
+    return None
+
+def weights_to_edges(sorted_weights: List[Tuple[float, str]], weights: Dict[str, float]) -> List[Edge]:
+    edges = []
+    for i in range(len(sorted_weights) - 1):
+        current_node = sorted_weights[i][1]
+        current_weight = weights[current_node]
+        if current_weight == 0:
+            continue
+        
+        transact = abs(current_weight)
+        target = find_greater_weight(transact, weights)
+        if target is None:
+            target = sorted_weights[i + 1][1]
+        edges.append(Edge(current_node, target, transact))
+        weights[target] += current_weight
+    return edges
+
+def remove_zero_weights(weights: List[Tuple[float, str]]):
+    return [w for w in weights if w[0] != 0]
+
+def split_star_nodes(edges: List[Edge], empty_nodes: List[str], verbose: bool) -> List[Edge]:
+    nodes = list(set(empty_nodes + [edge.start_node for edge in edges if edge.start_node != "*"]
+                                  + [edge.end_node for edge in edges if edge.end_node != "*"]))
+    if verbose:
+        print(f"Found these {len(nodes)} unique nodes: {nodes}")
+
+    new_edges = []
+    for edge in edges:
+        if edge.start_node == "*":
+            new_edges.extend(
+                Edge(node, edge.end_node, edge.weight / len(nodes)) 
+                for node in nodes if node != edge.end_node
+            )
+        elif edge.end_node == "*":
+            new_edges.extend(
+                Edge(edge.start_node, node, edge.weight / len(nodes)) 
+                for node in nodes if node != edge.start_node
+            )
+        else:
+            new_edges.append(edge)
+    return new_edges
+
+SEARCH_COMMENT = re.compile("^(#| *$)")
+SEARCH_EDGE = re.compile("(\w+|\*) *-> *(\w+|\*): *([0-9]+(\.[0-9]+)?)")
+SEARCH_NODE = re.compile("^(\w+)$")
+
+def parse_edge(line: str) -> Edge:
+    m = SEARCH_EDGE.match(line)
+    if m:
+        start_node, end_node, weight = m.groups()[:3]
+        return Edge(start_node, end_node, float(weight))
+    raise EdgeException("Invalid input line")
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-g", "--graphviz", action='store_true')
     argparser.add_argument("-v", "--verbose", action='store_true')
-    argparser.add_argument("filename", action='store_true')
+    argparser.add_argument("filename", nargs='?')
     args = argparser.parse_args()
-    verbose = args.verbose and not args.graphviz
+
     edges = []
-    emptyNodes = []
-    i = 1
-    for line in sys.stdin:
-        try:
-            edges.append(parseEdge(line))
-        except EdgeException:
-            if searchNode.match(line):
-                emptyNodes.append(line.rstrip())
-            elif searchComment.match(line):
-                pass
-            else:
-                print(sys.stderr, "Invalid input on line", i, ": " + line.rstrip())
-                exit(1)
-        i += 1
+    empty_nodes = []
 
-    edges = splitStarNodes(edges, emptyNodes, verbose)
+    with open(args.filename) if args.filename else sys.stdin as input_file:
+        for i, line in enumerate(input_file, 1):
+            try:
+                edges.append(parse_edge(line))
+            except EdgeException:
+                if SEARCH_NODE.match(line):
+                    empty_nodes.append(line.strip())
+                elif not SEARCH_COMMENT.match(line):
+                    print(f"Invalid input on line {i}: {line.strip()}", file=sys.stderr)
+                    sys.exit(1)
 
-    weights = getNodeWeights(edges)
+    edges = split_star_nodes(edges, empty_nodes, args.verbose)
+    weights = get_node_weights(edges)
+    sorted_weights = sort_weights(weights)
+    sorted_weights = remove_zero_weights(sorted_weights)
+
+    # Optionally perform a consistency check if verbose
+    if args.verbose and sorted_weights:
+        assert round(sum(weight for weight, _ in sorted_weights), 10) == 0.0
+        print("Node weights: ", sorted_weights)
+
+    edges = weights_to_edges(sorted_weights, weights)
+
+    if args.verbose and edges:
+        total_money_transacted = sum(edge.weight for edge in edges)
+        print(f"Total money transacted: {total_money_transacted}")
     
-    sortedWeights = sort(weights)
-    removeZeroWeights(sortedWeights)
-
-    if len(sortedWeights) > 0:
-        assert round(reduce((lambda x, y: x + y), map(lambda x: x[0], sortedWeights)), 10) == 0.0
-    if verbose:
-        print("Node weights: ", sortedWeights)
-
-    edges = weightsToEdges(sortedWeights, weights)
-
-    if len(edges) > 0 and verbose:
-        print("Total money transacted: ", reduce((lambda x, y: x + y), map(lambda x: x.weight, edges)))
-    printEdges(edges, args. graphviz)
+    print_edges(edges, args.graphviz)
